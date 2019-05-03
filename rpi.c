@@ -93,7 +93,7 @@ int i2c_read(uint16_t address, uint8_t reg, uint16_t length, uint8_t *buff)
     };
 
     if (ioctl(i2c_bus, I2C_RDWR, &i2c_transfer) < 0) {
-        fprintf(stderr, "Cannot read I²C: %s\n", strerror(errno));
+        fprintf(stderr, "Cannot read %#02x:%#02x: %s\n", address, reg, strerror(errno));
         return errno;
     }
 
@@ -109,7 +109,7 @@ int i2c_write(uint16_t address, uint8_t reg, uint8_t value)
 
     struct i2c_msg i2c_msg = {
         .addr = address,
-        .len = 1,
+        .len = 2,
         .buf = (uint8_t[]){ reg, value },
     };
     struct i2c_rdwr_ioctl_data i2c_transfer = {
@@ -118,7 +118,7 @@ int i2c_write(uint16_t address, uint8_t reg, uint8_t value)
     };
 
     if (ioctl(i2c_bus, I2C_RDWR, &i2c_transfer) < 0) {
-        fprintf(stderr, "Cannot write to I²C: %s\n", strerror(errno));
+        fprintf(stderr, "Cannot write %#02x to %#02x:%#02x: %s\n", value, address, reg, strerror(errno));
         return errno;
     }
 

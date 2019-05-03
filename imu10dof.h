@@ -3,20 +3,20 @@
 
 #include <stdint.h>
 
-// Byte order is important
+// Member order is important
 struct accel_data
 {
-    uint16_t accel_x;
-    uint16_t accel_y;
-    uint16_t accel_z;
-    uint16_t temp;
-    uint16_t gyro_x;
-    uint16_t gyro_y;
-    uint16_t gyro_z;
-    uint16_t magnet_x;
-    uint16_t magnet_y;
-    uint16_t magnet_z;
-    // TODO: pressure
+    int16_t accel_x;
+    int16_t accel_y;
+    int16_t accel_z;
+    int16_t temp;
+    int16_t gyro_x;
+    int16_t gyro_y;
+    int16_t gyro_z;
+    int16_t magnet_x;
+    int16_t magnet_y;
+    int16_t magnet_z;
+    uint16_t pressure;
 };
 
 int imu10dof_start();
