@@ -46,9 +46,6 @@ int imu10dof_read(struct accel_data *accel_data)
         buff[i] = (buff[i] >> 8) | (buff[i] << 8);
     accel_data->temp = (accel_data->temp >> 8) | (accel_data->temp << 8);
     accel_data->accel_z = (accel_data->accel_z >> 8) | (accel_data->accel_z << 8);
-    accel_data->gyro_x = (accel_data->gyro_x >> 8) | (accel_data->gyro_x << 8);
-    accel_data->gyro_y = (accel_data->gyro_y >> 8) | (accel_data->gyro_y << 8);
-    accel_data->gyro_z = (accel_data->gyro_z >> 8) | (accel_data->gyro_z << 8);
 
     return 0;
 }
