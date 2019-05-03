@@ -1,0 +1,9 @@
+/.settings/
+/Debug/
+/Release/
+
+.cproject
+.project
+accel
+*.o
+*.out

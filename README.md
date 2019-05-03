@@ -1,2 +1,7 @@
 # rpi-10dofimu
-Raspberry Pi + 10 DOF IMU reader
+Reading 10 DOF IMU (accelerometer + gyroscope + magnetometer + barometer) on a Raspberry Pi
+
+## To do:
+* Kalman filtering
+* Barometer readout
+* Visualization
