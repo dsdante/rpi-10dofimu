@@ -41,6 +41,8 @@ int imu10dof_start()
         fputs("This system is not a Raspberry Pi.\n", stderr);
         return 1;
     }
+
+    // MPU-9255 accelerometer/gyroscope
     if (i2c_open(1))
         return 1;
     uint8_t device_id;
@@ -55,6 +57,7 @@ int imu10dof_start()
     i2c_write(MPU9255_I2C_ADDRESS, MPU9255_ACCEL_CONFIG, 0x18);  // ±16 g  ==  ±156.91 m/s²
     i2c_write(MPU9255_I2C_ADDRESS, MPU9255_INT_PIN_CFG, 0x02);  // bypass magnetometer to the common I²C bus
 
+    // AK8963 magnetometer
     if (i2c_read(AK8963_I2C_ADDRESS, AK8963_WIA, 1, &device_id))
         return 1;
     if (device_id != AK8963_ID) {
@@ -63,6 +66,7 @@ int imu10dof_start()
     }
     i2c_write(AK8963_I2C_ADDRESS, AK8963_CNTL1, 0x16);  // continuous 16-bit measurement
 
+    // BMP180 pressure sensor
     if (i2c_read(BMP180_I2C_ADDRESS, BMP180_GET_ID, 1, &device_id))
         return 1;
     if (device_id != BMP180_ID) {
@@ -75,7 +79,7 @@ int imu10dof_start()
 
 int imu10dof_read(struct accel_data *accel_data)
 {
-    // Read the MPU-9255 accelerometer/gyroscope
+    // MPU-9255 accelerometer/gyroscope
     if (i2c_read(MPU9255_I2C_ADDRESS, MPU9255_ACCEL_XOUT_H, MPU9255_DATA_LENGTH, (uint8_t*)(&accel_data->accel_x)))
         return 1;
     // Restore the byte order
@@ -83,22 +87,20 @@ int imu10dof_read(struct accel_data *accel_data)
     for (int i = 0; i < 7; i++)
         buff[i] = bswap_16(buff[i]);
 
-    // Read the AK8963 magnetometer
+    // AK8963 magnetometer
     static uint8_t mag_buff[7];  // reading the 7th byte triggers the next measurement
     if (i2c_read(AK8963_I2C_ADDRESS, AK8963_HXL, 7, mag_buff))
         return 2;
     memcpy(&accel_data->magnet_x, mag_buff, 6);
 
-    // Read the BMP180 pressure sensor
+    // BMP180 pressure sensor
     static uint16_t pressure = 0;
     uint8_t status;
     if (i2c_read(BMP180_I2C_ADDRESS, BMP180_CTRL_MEAS, 1, &status))
         return 3;
     if (!(status & 0x20)) { // measurement ready
-        if (i2c_read(BMP180_I2C_ADDRESS, BMP180_OUT_MSB, 2, (uint8_t*)&pressure))
-            return 3;
-        if (i2c_write(BMP180_I2C_ADDRESS, BMP180_CTRL_MEAS, 0x34))  // request the next measurement
-            return 3;
+        i2c_read(BMP180_I2C_ADDRESS, BMP180_OUT_MSB, 2, (uint8_t*)&pressure);
+        i2c_write(BMP180_I2C_ADDRESS, BMP180_CTRL_MEAS, 0x34);  // request the next measurement
     }
     accel_data->pressure = bswap_16(pressure);
 
