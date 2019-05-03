@@ -20,7 +20,7 @@
 // AK8963 magnetometer
 #define AK8963_I2C_ADDRESS      0x0C  // I²C address
 #define AK8963_ID               0x48  // device ID
-#define AK8963_DATA_LENGTH      6     // measurement data length
+#define AK8963_DATA_LENGTH      7     // measurement data length
 // Registers
 #define AK8963_WIA              0x00  // get device ID
 #define AK8963_HXL              0x03  // measurement data beginning
@@ -41,10 +41,10 @@ int imu10dof_start()
         fputs("This system is not a Raspberry Pi.\n", stderr);
         return 1;
     }
-
-    // MPU-9255 accelerometer/gyroscope
     if (i2c_open(1))
         return 1;
+
+    // MPU-9255 accelerometer/gyroscope
     uint8_t device_id;
     if (i2c_read(MPU9255_I2C_ADDRESS, MPU9255_WHO_AM_I, 1, &device_id))
         return 1;
@@ -55,7 +55,7 @@ int imu10dof_start()
     i2c_write(MPU9255_I2C_ADDRESS, MPU9255_PWR_MGMT_1, 0x81);  // reset all
     i2c_write(MPU9255_I2C_ADDRESS, MPU9255_GYRO_CONFIG, 0x18);  // ±2000 °/s  ==  ±34.907 rad/s
     i2c_write(MPU9255_I2C_ADDRESS, MPU9255_ACCEL_CONFIG, 0x18);  // ±16 g  ==  ±156.91 m/s²
-    i2c_write(MPU9255_I2C_ADDRESS, MPU9255_INT_PIN_CFG, 0x02);  // bypass magnetometer to the common I²C bus
+    i2c_write(MPU9255_I2C_ADDRESS, MPU9255_INT_PIN_CFG, 0x02);  // bypass AK8963 to the common I²C bus
 
     // AK8963 magnetometer
     if (i2c_read(AK8963_I2C_ADDRESS, AK8963_WIA, 1, &device_id))
@@ -84,22 +84,22 @@ int imu10dof_read(struct accel_data *accel_data)
         return 1;
     // Restore the byte order
     int16_t *buff = (int16_t*)accel_data;
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < MPU9255_DATA_LENGTH/sizeof(int16_t); i++)
         buff[i] = bswap_16(buff[i]);
 
     // AK8963 magnetometer
-    static uint8_t mag_buff[7];  // reading the 7th byte triggers the next measurement
-    if (i2c_read(AK8963_I2C_ADDRESS, AK8963_HXL, 7, mag_buff))
+    static uint8_t mag_buff[AK8963_DATA_LENGTH];
+    if (i2c_read(AK8963_I2C_ADDRESS, AK8963_HXL, AK8963_DATA_LENGTH, mag_buff))  // reading the 7th byte triggers the next measurement
         return 2;
     memcpy(&accel_data->magnet_x, mag_buff, 6);
 
     // BMP180 pressure sensor
-    static uint16_t pressure = 0;
+    static uint16_t pressure = 0;  // keep old if the new measurement is not ready
     uint8_t status;
     if (i2c_read(BMP180_I2C_ADDRESS, BMP180_CTRL_MEAS, 1, &status))
         return 3;
     if (!(status & 0x20)) { // measurement ready
-        i2c_read(BMP180_I2C_ADDRESS, BMP180_OUT_MSB, 2, (uint8_t*)&pressure);
+        i2c_read(BMP180_I2C_ADDRESS, BMP180_OUT_MSB, sizeof(pressure), (uint8_t*)&pressure);
         i2c_write(BMP180_I2C_ADDRESS, BMP180_CTRL_MEAS, 0x34);  // request the next measurement
     }
     accel_data->pressure = bswap_16(pressure);
